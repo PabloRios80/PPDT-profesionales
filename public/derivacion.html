@@ -29,11 +29,26 @@
         </div>
         <h1>Derivación a Día Preventivo</h1>
         <form id="derivacion-form">
-            <div class="form-group"><label for="dni">DNI del Paciente</label><input id="dni" type="text" name="dni" required pattern="\d{7,8}" title="El DNI debe tener 7 u 8 números, sin puntos."></div>
-            <div class="form-group"><label for="fechaNacimiento">Fecha de Nacimiento</label><input id="fechaNacimiento" type="date" name="fechaNacimiento" required></div>
-            <div class="form-group"><label for="nombre">Nombre</label><input id="nombre" type="text" name="nombre" required></div>
-            <div class="form-group"><label for="apellido">Apellido</label><input id="apellido" type="text" name="apellido" required></div>
-            <div class="form-group"><label for="telefono">Teléfono</label><input id="telefono" type="tel" name="telefono" required pattern="[0-9]{10}" title="El teléfono debe tener 10 números (código de área + número), sin 0, sin 15 ni espacios."></div>
+            <div class="form-group">
+                <label for="dni">DNI del Paciente</label>
+                <input id="dni" type="text" name="dni" required pattern="\d{7,8}" title="El DNI debe tener 7 u 8 números, sin puntos.">
+            </div>
+            <div class="form-group">
+                <label for="fechaNacimiento">Fecha de Nacimiento</label>
+                <input id="fechaNacimiento" type="date" name="fechaNacimiento" required>
+            </div>
+            <div class="form-group">
+                <label for="nombre">Nombre</label>
+                <input id="nombre" type="text" name="nombre" required pattern="[A-Za-zÀ-ÿ\s]+" title="Solo se permiten letras y espacios.">
+            </div>
+            <div class="form-group">
+                <label for="apellido">Apellido</label>
+                <input id="apellido" type="text" name="apellido" required pattern="[A-Za-zÀ-ÿ\s]+" title="Solo se permiten letras y espacios.">
+            </div>
+            <div class="form-group">
+                <label for="telefono">Teléfono</label>
+                <input id="telefono" type="tel" name="telefono" required pattern="[0-9]{10}" title="El teléfono debe tener 10 números, sin 0, sin 15 ni espacios.">
+            </div>
             <div class="form-group"><label for="email">Email</label><input id="email" type="email" name="email" required></div>
             <div class="form-group full-width"><label for="observaciones">Observaciones (opcional)</label><textarea id="observaciones" name="observaciones" rows="3"></textarea></div>
             <div class="full-width" style="text-align: center;"><button type="submit">Enviar Derivación</button></div>
@@ -74,6 +89,20 @@
                 submitButton.disabled = false;
                 submitButton.textContent = 'Enviar Derivación';
             }
+        });
+
+        // --- SCRIPT PARA VALIDAR LA FECHA ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const fechaNacimientoInput = document.getElementById('fechaNacimiento');
+            const hoy = new Date();
+            const anioActual = hoy.getFullYear();
+            const mesActual = String(hoy.getMonth() + 1).padStart(2, '0');
+            const diaActual = String(hoy.getDate()).padStart(2, '0');
+            const fechaMaxima = `${anioActual}-${mesActual}-${diaActual}`;
+            fechaNacimientoInput.setAttribute('max', fechaMaxima);
+            const anioMinimo = anioActual - 120;
+            const fechaMinima = `${anioMinimo}-${mesActual}-${diaActual}`;
+            fechaNacimientoInput.setAttribute('min', fechaMinima);
         });
     </script>
 </body>

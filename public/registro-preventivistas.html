@@ -26,10 +26,10 @@
         </div>
         <h1>Registro de Preventivistas</h1>
         <form id="registro-form">
-            <input type="text" name="dni" placeholder="DNI" required>
-            <input type="text" name="nombre" placeholder="Nombre" required>
-            <input type="text" name="apellido" placeholder="Apellido" required>
-            <input type="tel" name="telefono" placeholder="Teléfono" required>
+            <input type="text" name="dni" placeholder="DNI" required pattern="\d{7,8}" title="El DNI debe tener 7 u 8 números.">
+            <input type="text" name="nombre" placeholder="Nombre" required pattern="[A-Za-zÀ-ÿ\s]+" title="Solo se permiten letras y espacios.">
+            <input type="text" name="apellido" placeholder="Apellido" required pattern="[A-Za-zÀ-ÿ\s]+" title="Solo se permiten letras y espacios.">
+            <input type="tel" name="telefono" placeholder="Teléfono" required pattern="[0-9]{10}" title="El teléfono debe tener 10 números.">
             <input type="email" name="email" placeholder="Email (será tu usuario)" required>
             <button type="submit">Registrarse</button>
         </form>
