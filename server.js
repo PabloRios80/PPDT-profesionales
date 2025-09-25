@@ -118,6 +118,32 @@ app.post('/api/profesionales/derivar', async (req, res) => {
     }
 });
 
+// Endpoint para el registro de nuevos preventivistas
+app.post('/api/preventivistas/registro', async (req, res) => {
+    try {
+        const response = await axios.post(APPS_SCRIPT_URL, {
+            action: 'registerPreventivista',
+            preventivistaData: req.body
+        });
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: 'No se pudo procesar el registro.' });
+    }
+});
+
+// Endpoint para el login de preventivistas
+app.post('/api/preventivistas/login', async (req, res) => {
+    try {
+        const response = await axios.post(APPS_SCRIPT_URL, {
+            action: 'loginPreventivista',
+            credentials: req.body
+        });
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: 'Error en el servidor de login.' });
+    }
+});
+
 
 
 const PORT = process.env.PORT || 3000;

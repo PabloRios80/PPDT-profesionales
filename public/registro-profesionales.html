@@ -42,13 +42,13 @@
         <p style="margin-top: -15px; margin-bottom: 25px; color: #666;">Completa tus datos para generar tu acceso a la plataforma.</p>
 
         <form id="registro-form">
-            <input type="text" name="dni" placeholder="DNI" required>
+            <input type="text" name="dni" placeholder="DNI (7 u 8 números, sin puntos)" required pattern="\d{7,8}" title="El DNI debe tener 7 u 8 números, sin puntos.">
             <input type="text" name="matricula" placeholder="Matrícula" required>
             <input class="full-width" type="text" name="nombre" placeholder="Nombre" required>
             <input class="full-width" type="text" name="apellido" placeholder="Apellido" required>
             <input class="full-width" type="text" name="especialidad" placeholder="Especialidad" required>
             <input class="full-width" type="email" name="email" placeholder="Email (será tu usuario)" required>
-            <input class="full-width" type="tel" name="telefono" placeholder="Teléfono de Contacto" required>
+            <input type="tel" name="telefono" placeholder="Teléfono (10 números, ej: 3424123456)" required pattern="[0-9]{10}" title="El teléfono debe tener 10 números (código de área + número), sin 0, sin 15 ni espacios.">
             <button type="submit" class="full-width">Solicitar Acceso</button>
         </form>
 
