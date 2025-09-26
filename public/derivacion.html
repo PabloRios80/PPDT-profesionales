@@ -56,11 +56,38 @@
         <div id="response-message" class="message" style="display:none;"></div>
         <a href="panel-profesional.html" class="back-link">← Volver al Panel</a>
     </div>
+
     <script>
-        // El script no necesita cambios
-        document.getElementById('derivacion-form').addEventListener('submit', async (e) => {
+    // Todo el código se ejecuta después de que la página se haya cargado
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // 1. Verificamos que el profesional esté logueado
+        const professionalName = sessionStorage.getItem('profesional-logueado');
+        if (!professionalName) {
+            // Si no está logueado, lo redirigimos para evitar errores
+            window.location.href = 'portal-profesionales.html';
+        }
+
+        // 2. Configuramos la validación de la fecha de nacimiento
+        const fechaNacimientoInput = document.getElementById('fechaNacimiento');
+        const hoy = new Date();
+        // Formato YYYY-MM-DD para los atributos min y max
+        const fechaMaxima = hoy.toISOString().split("T")[0]; 
+        fechaNacimientoInput.setAttribute('max', fechaMaxima);
+        
+        const anioMinimo = hoy.getFullYear() - 120;
+        const fechaMinima = new Date(hoy.setFullYear(anioMinimo)).toISOString().split("T")[0];
+        fechaNacimientoInput.setAttribute('min', fechaMinima);
+
+        // 3. Configuramos el envío del formulario
+        const form = document.getElementById('derivacion-form');
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.target).entries());
+            
+            // Añadimos el nombre del médico a los datos que vamos a enviar
+            data.medicoDerivador = professionalName;
+            
             const submitButton = e.target.querySelector('button');
             const messageDiv = document.getElementById('response-message');
             messageDiv.style.display = 'none';
@@ -77,7 +104,7 @@
                 if (result.status === 'success') {
                     messageDiv.className = 'message success';
                     messageDiv.innerHTML = '<h3>¡Derivación enviada con éxito!</h3><p>El paciente ha sido registrado en nuestra base.</p>';
-                    e.target.reset();
+                    e.target.reset(); // Limpia el formulario
                 } else {
                     throw new Error(result.message);
                 }
@@ -90,20 +117,8 @@
                 submitButton.textContent = 'Enviar Derivación';
             }
         });
-
-        // --- SCRIPT PARA VALIDAR LA FECHA ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const fechaNacimientoInput = document.getElementById('fechaNacimiento');
-            const hoy = new Date();
-            const anioActual = hoy.getFullYear();
-            const mesActual = String(hoy.getMonth() + 1).padStart(2, '0');
-            const diaActual = String(hoy.getDate()).padStart(2, '0');
-            const fechaMaxima = `${anioActual}-${mesActual}-${diaActual}`;
-            fechaNacimientoInput.setAttribute('max', fechaMaxima);
-            const anioMinimo = anioActual - 120;
-            const fechaMinima = `${anioMinimo}-${mesActual}-${diaActual}`;
-            fechaNacimientoInput.setAttribute('min', fechaMinima);
-        });
+        
+    });
     </script>
 </body>
 </html>

@@ -2,24 +2,33 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel de Turnos - IAPOS</title>
+    <title>Panel de Preventivistas - IAPOS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Estilos consistentes con el resto de la app */
+        /* Estilos generales */
         body { font-family: 'Roboto', sans-serif; margin: 0; padding: 20px; background-color: #f0f8ff; }
         .container { background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 30px; max-width: 1200px; margin: auto; }
         .header-banner { background-color: #005A9C; color: white; padding: 15px 30px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; margin: -30px -30px 30px -30px; }
         .header-banner h1 { font-size: 2em; color: white; margin: 0; border: none; }
         .header-banner img { height: 50px; }
         h2 { color: #005A9C; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
         th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
         th { background-color: #e6f7ff; }
-        .cancel-btn { background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
-        .cancel-btn:hover { background-color: #c82333; }
+        
+        /* Barra de acciones superior */
         .actions-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .action-button { padding: 10px 20px; border-radius: 5px; text-decoration: none; color: white; font-weight: bold; cursor: pointer; border: none; }
         .btn-green { background-color: #009A44; }
         .btn-gray { background-color: #6c757d; }
+
+        /* Estilos para las pestañas y vistas */
+        .tabs { border-bottom: 2px solid #ccc; margin-bottom: 20px; }
+        .tab-button { background-color: transparent; border: none; border-bottom: 3px solid transparent; padding: 10px 20px; cursor: pointer; font-size: 1.1em; font-weight: bold; color: #666; }
+        .tab-button.active { color: #005A9C; border-bottom: 3px solid #005A9C; }
+        .vista { display: none; }
+        .vista.activa { display: block; }
+        .cancel-btn { background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -30,108 +39,151 @@
                 <img src="logo_iapos.png" alt="Logo IAPOS">
             </div>
         </header>
-
-        <div class="actions-bar">
-            <h2>Turnos Agendados</h2>
-            <div>
-                <a href="/" target="_blank" class="action-button btn-green">Nuevo Turno</a>
-                <button id="logout-btn" class="action-button btn-gray">Salir</button>
+        <main>
+            <div class="actions-bar">
+                <h2>Panel de Control</h2>
+                <div>
+                    <a href="/" target="_blank" class="action-button btn-green">Nuevo Turno</a>
+                    <button id="logout-btn" class="action-button btn-gray">Salir</button>
+                </div>
             </div>
-        </div>
 
-        <table id="turnos-table">
-            <thead>
-                <tr>
-                    <th>Fecha y Hora</th>
-                    <th>Apellido y Nombre</th>
-                    <th>DNI</th>
-                    <th>Email</th>
-                    <th>Teléfono</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                </tbody>
-        </table>
+            <div class="tabs">
+                <button id="tab-turnos" class="tab-button active">Turnos Agendados</button>
+                <button id="tab-derivaciones" class="tab-button">Derivaciones Recibidas</button>
+            </div>
+
+            <div id="vista-turnos" class="vista activa">
+                <h3>Turnos Agendados</h3>
+                <table id="turnos-table">
+                    <thead>
+                        <tr><th>Fecha y Hora</th><th>Apellido y Nombre</th><th>DNI</th><th>Email</th><th>Teléfono</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div id="vista-derivaciones" class="vista">
+                <h3>Derivaciones Recibidas de Profesionales</h3>
+                <table id="derivaciones-table">
+                    <thead>
+                        <tr><th>Fecha Deriv.</th><th>DNI Paciente</th><th>Nombre y Apellido</th><th>Contacto</th><th>Observaciones</th><th>Médico Derivador</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </main>
     </div>
 
     <script>
-        // --- INICIO DEL SCRIPT COMPLETO Y CORREGIDO ---
-
-        // 1. Proteger la página
+        // 1. Verificación de Login
         if (sessionStorage.getItem('preventivista-logueado') !== 'true') {
             window.location.href = 'login.html';
         }
 
-        // 2. Lógica del botón Salir
+        // 2. Referencias a Elementos
         const logoutBtn = document.getElementById('logout-btn');
+        const tabTurnos = document.getElementById('tab-turnos');
+        const tabDerivaciones = document.getElementById('tab-derivaciones');
+        const vistaTurnos = document.getElementById('vista-turnos');
+        const vistaDerivaciones = document.getElementById('vista-derivaciones');
+        const turnosTableBody = document.querySelector('#turnos-table tbody');
+        const derivacionesTableBody = document.querySelector('#derivaciones-table tbody');
+
+        // 3. Lógica de Navegación (Pestañas y Salir)
         logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem('preventivista-logueado');
             window.location.href = 'index.html';
         });
 
-        // 3. Lógica para cargar y mostrar los turnos (la que habíamos borrado por error)
-        document.addEventListener('DOMContentLoaded', async () => {
-            const tableBody = document.querySelector('#turnos-table tbody');
-            
+        tabTurnos.addEventListener('click', () => {
+            vistaTurnos.classList.add('activa');
+            vistaDerivaciones.classList.remove('activa');
+            tabTurnos.classList.add('active');
+            tabDerivaciones.classList.remove('active');
+        });
+
+        tabDerivaciones.addEventListener('click', () => {
+            vistaTurnos.classList.remove('activa');
+            vistaDerivaciones.classList.add('activa');
+            tabTurnos.classList.remove('active');
+            tabDerivaciones.classList.add('active');
+        });
+
+        // 4. Funciones para Cargar Datos
+        async function cargarTurnosAgendados() {
+            turnosTableBody.innerHTML = '<tr><td colspan="6">Cargando...</td></tr>';
             try {
                 const response = await fetch('/api/admin/turnos');
                 const data = await response.json();
-
                 if (data.status === 'success' && data.appointments.length > 0) {
                     let html = '';
                     data.appointments.forEach(turno => {
-                        // Formateamos la fecha para que sea más legible
-                        const fecha = new Date(turno.fechaInicio).toLocaleString('es-AR', {
-                            year: 'numeric', month: '2-digit', day: '2-digit',
-                            hour: '2-digit', minute: '2-digit', hour12: false
-                        });
+                        const fecha = new Date(turno.fechaInicio).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+                        html += `<tr id="turno-${turno.idEvento.replace(/@/g, '-')}"><td>${fecha} hs</td><td>${turno.apellido}, ${turno.nombre}</td><td>${turno.dni}</td><td>${turno.email || ''}</td><td>${turno.telefono}</td><td><button class="cancel-btn" data-id="${turno.idEvento}">Anular</button></td></tr>`;
+                    });
+                    turnosTableBody.innerHTML = html;
+                } else {
+                    turnosTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay turnos agendados.</td></tr>';
+                }
+            } catch (error) {
+                turnosTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Error al cargar los turnos.</td></tr>';
+            }
+        }
+        
+        async function cargarDerivaciones() {
+            derivacionesTableBody.innerHTML = '<tr><td colspan="6">Cargando...</td></tr>';
+            try {
+                const response = await fetch('/api/admin/derivaciones');
+                const data = await response.json();
+                if (data.status === 'success' && data.referrals.length > 0) {
+                    let html = '';
+                    data.referrals.forEach(d => {
+                        const fechaDeriv = new Date(d.fechaDerivacion).toLocaleDateString('es-AR');
                         html += `
-                            <tr id="turno-${turno.idEvento.replace(/@/g, '-')}">
-                                <td>${fecha} hs</td>
-                                <td>${turno.apellido}, ${turno.nombre}</td>
-                                <td>${turno.dni}</td>
-                                <td>${turno.email || 'No provisto'}</td>
-                                <td>${turno.telefono}</td>
-                                <td><button class="cancel-btn" data-id="${turno.idEvento}">Anular</button></td>
+                            <tr>
+                                <td>${fechaDeriv}</td>
+                                <td>${d.dni}</td>
+                                <td>${d.nombre} ${d.apellido}</td>
+                                <td>${d.telefono}<br>${d.email}</td>
+                                <td>${d.observaciones || ''}</td>
+                                <td><strong>${d.medicoDerivador || 'No especificado'}</strong></td>
                             </tr>
                         `;
                     });
-                    tableBody.innerHTML = html;
+                    derivacionesTableBody.innerHTML = html;
                 } else {
-                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay turnos agendados.</td></tr>';
+                    derivacionesTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay derivaciones recibidas.</td></tr>';
                 }
             } catch (error) {
-                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Error al cargar los turnos.</td></tr>';
+                derivacionesTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Error al cargar las derivaciones.</td></tr>';
             }
-        });
+        }
 
-        // 4. Lógica para el botón de anular (la que ya funcionaba)
-        document.getElementById('turnos-table').addEventListener('click', async (e) => {
+        // 5. Lógica para Anular Turnos
+        turnosTableBody.addEventListener('click', async (e) => {
             if (e.target.classList.contains('cancel-btn')) {
                 const eventId = e.target.dataset.id;
-                if (confirm('¿Estás seguro de que quieres anular este turno? Esta acción no se puede deshacer.')) {
-                    try {
-                        const response = await fetch('/api/cancelar', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ eventId: eventId })
-                        });
-                        const result = await response.json();
-                        if (result.status === 'success') {
-                            document.getElementById(`turno-${eventId.replace(/@/g, '-')}`).remove();
-                            alert('Turno anulado con éxito.');
-                        } else {
-                            throw new Error(result.message);
-                        }
-                    } catch (error) {
-                        alert('Error al anular el turno: ' + error.message);
-                    }
+                if (confirm('¿Estás seguro de que quieres anular este turno?')) {
+                    const response = await fetch('/api/cancelar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ eventId: eventId })
+                    });
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        document.getElementById(`turno-${eventId.replace(/@/g, '-')}`).remove();
+                        alert('Turno anulado con éxito.');
+                    } else { alert('Error al anular el turno: ' + result.message); }
                 }
             }
         });
 
-        // --- FIN DEL SCRIPT COMPLETO ---
+        // 6. Carga Inicial de Datos
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarTurnosAgendados();
+            cargarDerivaciones();
+        });
     </script>
 </body>
 </html>

@@ -144,7 +144,16 @@ app.post('/api/preventivistas/login', async (req, res) => {
     }
 });
 
-
+// Endpoint para que el panel de administración pida todas las derivaciones
+app.get('/api/admin/derivaciones', async (req, res) => {
+    try {
+        const response = await axios.post(APPS_SCRIPT_URL, { action: 'getAllReferrals' });
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching referrals:', error);
+        res.status(500).json({ status: 'error', message: 'No se pudieron cargar las derivaciones.' });
+    }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
