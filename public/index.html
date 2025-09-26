@@ -101,6 +101,15 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+
+        // --- CÓDIGO NUEVO PARA MOSTRAR LA TURNERA DIRECTAMENTE ---
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('accion') === 'mostrarTurnera') {
+            const introSection = document.getElementById('intro-section');
+            const turneraWrapper = document.getElementById('turnera-wrapper');
+            if (introSection) introSection.classList.add('hidden');
+            if (turneraWrapper) turneraWrapper.classList.remove('hidden');
+        }
         const introSection = document.getElementById('intro-section');
         const turneraWrapper = document.getElementById('turnera-wrapper');
         const showTurneraBtn = document.getElementById('show-turnera-btn');
