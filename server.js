@@ -76,6 +76,17 @@ app.get('/api/admin/turnos', async (req, res) => {
     }
 });
 
+// Endpoint para que el panel de administración pida todas las derivaciones
+app.get('/api/admin/derivaciones', async (req, res) => {
+    try {
+        const response = await axios.post(APPS_SCRIPT_URL, { action: 'getAllReferrals' });
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching referrals:', error);
+        res.status(500).json({ status: 'error', message: 'No se pudieron cargar las derivaciones.' });
+    }
+});
+
 // Endpoint para buscar datos de un afiliado por DNI
 app.get('/api/usuario/:dni', async (req, res) => {
     try {
@@ -172,17 +183,6 @@ app.post('/api/preventivistas/login', async (req, res) => {
         res.json(response.data);
     } catch (error) {
         res.status(500).json({ status: 'error', message: 'Error en el servidor de login.' });
-    }
-});
-
-// Endpoint para que el panel de administración pida todas las derivaciones
-app.get('/api/admin/derivaciones', async (req, res) => {
-    try {
-        const response = await axios.post(APPS_SCRIPT_URL, { action: 'getAllReferrals' });
-        res.json(response.data);
-    } catch (error) {
-        console.error('Error fetching referrals:', error);
-        res.status(500).json({ status: 'error', message: 'No se pudieron cargar las derivaciones.' });
     }
 });
 
