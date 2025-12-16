@@ -55,49 +55,46 @@
         <div id="response-message" class="message" style="display:none;"></div>
         <a href="portal-profesionales.html" class="back-link">← Volver al Portal</a>
     </div>
+<script>
+    const form = document.getElementById('registro-form');
+    const messageDiv = document.getElementById('response-message');
 
-    <script>
-        // El script no necesita cambios
-        const form = document.getElementById('registro-form');
-        const messageDiv = document.getElementById('response-message');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        const submitButton = form.querySelector('button');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Procesando...';
+        messageDiv.style.display = 'none'; // Ocultar mensaje previo
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-            const submitButton = form.querySelector('button');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Procesando...';
+        try {
+            const response = await fetch('/api/profesionales/registro', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
 
-            try {
-                const response = await fetch('/api/profesionales/registro', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-
-                messageDiv.style.display = 'block';
-                if (result.status === 'success') {
-                    messageDiv.className = 'message success';
-                    messageDiv.innerHTML = `
-                        <h3>¡Registro exitoso!</h3>
-                        <p>Tus credenciales de acceso han sido generadas. Guárdalas en un lugar seguro:</p>
-                        <p><strong>Usuario:</strong> ${result.credentials.user}</p>
-                        <p><strong>Contraseña:</strong> ${result.credentials.pass}</p>
-                        <p>Ya puedes volver al portal e iniciar sesión.</p>
-                    `;
-                    form.style.display = 'none';
-                } else {
-                    throw new Error(result.message);
-                }
-            } catch (error) {
-                messageDiv.className = 'message error';
-                messageDiv.textContent = 'Error: ' + error.message;
-                submitButton.disabled = false;
-                submitButton.textContent = 'Solicitar Acceso';
+            messageDiv.style.display = 'block';
+            if (result.status === 'success') {
+                // --- MENSAJE DE ÉXITO ACTUALIZADO ---
+                messageDiv.className = 'message success';
+                messageDiv.innerHTML = `
+                    <h3>¡Solicitud recibida!</h3>
+                    <p><strong>Revisa tu bandeja de entrada (y la carpeta de spam).</strong> Te hemos enviado un correo electrónico a <strong>${data.email}</strong> con tu contraseña para el primer ingreso.</p>
+                `;
+                form.style.display = 'none'; // Ocultamos el formulario
+            } else {
+                throw new Error(result.message);
             }
-        });
-    </script>
+        } catch (error) {
+            messageDiv.className = 'message error';
+            messageDiv.textContent = 'Error: ' + error.message;
+            submitButton.disabled = false;
+            submitButton.textContent = 'Solicitar Acceso';
+        }
+    });
+</script>
 </body>
 </html>
