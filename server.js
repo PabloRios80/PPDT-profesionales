@@ -288,63 +288,50 @@ function verificarToken(req, res, next) {
         res.status(401).json({ success: false, message: 'Token inválido' });
     }
 }
-
-// Agenda cierre DP del médico
-app.get("/api/mi-agenda-cierre", verificarToken, async (req, res) => {
-  const { fecha } = req.query;
-  const idSede = req.usuario.id_sede_dp;
-  try {
-    let query = supabase
-      .from("agenda_cierre_dp")
-      .select("*")
-      .eq("id_sede_dp", idSede)
-      .order("hora", { ascending: true });
-    if (fecha) query = query.eq("fecha", fecha);
-    const { data, error } = await query;
-    if (error) throw error;
-    res.json({ success: true, turnos: data || [] });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
-});
-
-// Actualizar estado turno cierre
-app.get("/api/mi-agenda-cierre", verificarToken, async (req, res) => {
-  const { fecha } = req.query;
-  const idProfesional = req.usuario.id;
-  try {
-    // Buscar el médico en medicos_cierre_dp por id_profesional
-    const { data: medico } = await supabase
-      .from("medicos_cierre_dp")
-      .select("id")
-      .eq("id_profesional", idProfesional)
-      .eq("activo", true)
-      .single();
-
-    if (!medico) {
-      return res.json({
-        success: true,
-        turnos: [],
-        mensaje: "Sin agenda configurada",
-      });
+app.get('/api/mi-agenda-cierre', async (req, res) => {
+    const { fecha, id_medico } = req.query;
+    try {
+        let query = supabase
+            .from('agenda_cierre_dp')
+            .select('*')
+            .order('hora', { ascending: true });
+        if (fecha) query = query.eq('fecha', fecha);
+        if (id_medico) query = query.eq('id_medico', id_medico);
+        const { data, error } = await query;
+        if (error) throw error;
+        res.json({ success: true, turnos: data || [] });
+    } catch(e) {
+        res.status(500).json({ success: false, message: e.message });
     }
-
-    let query = supabase
-      .from("agenda_cierre_dp")
-      .select("*")
-      .eq("id_medico", medico.id)
-      .order("hora", { ascending: true });
-
-    if (fecha) query = query.eq("fecha", fecha);
-
-    const { data, error } = await query;
-    if (error) throw error;
-    res.json({ success: true, turnos: data || [] });
-  } catch (e) {
-    res.status(500).json({ success: false, message: e.message });
-  }
 });
 
+app.patch('/api/mi-agenda-cierre/:id', async (req, res) => {
+    try {
+        const { error } = await supabase
+            .from('agenda_cierre_dp')
+            .update(req.body)
+            .eq('id', req.params.id);
+        if (error) throw error;
+        res.json({ success: true });
+    } catch(e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+app.get('/api/mi-medico', async (req, res) => {
+    const { id_profesional } = req.query;
+    try {
+        const { data } = await supabase
+            .from('medicos_cierre_dp')
+            .select('id')
+            .eq('id_profesional', id_profesional)
+            .eq('activo', true)
+            .single();
+        res.json({ id_medico: data?.id || null });
+    } catch(e) {
+        res.json({ id_medico: null });
+    }
+});
 // =========================================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

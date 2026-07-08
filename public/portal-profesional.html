@@ -410,18 +410,30 @@
       // ── AGENDA ──
       let turnosAnteriores = [];
       let pollingInterval = null;
-
       async function cargarAgenda() {
         const fecha = document.getElementById("fechaAgenda").value;
-        const token = localStorage.getItem("dpToken");
         const lista = document.getElementById("listaTurnosConsultorio");
+        const payload = window.dpPayload;
+
+        // Buscar id_medico desde el profesional logueado
+        const idProfesional = payload?.id;
 
         try {
-          const res = await fetch(`/api/mi-agenda-cierre?fecha=${fecha}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const token = localStorage.getItem("dpToken");
-          console.log("Token:", token ? token.substring(0, 20) : "NULL");
+          // Primero buscar el id_medico del profesional
+          const resMedico = await fetch(
+            `/api/mi-medico?id_profesional=${idProfesional}`,
+          );
+          const dataMedico = await resMedico.json();
+
+          if (!dataMedico.id_medico) {
+            lista.innerHTML =
+              '<p class="text-center text-gray-400 py-8">No tenés agenda configurada. Contactá al coordinador.</p>';
+            return;
+          }
+
+          const res = await fetch(
+            `/api/mi-agenda-cierre?fecha=${fecha}&id_medico=${dataMedico.id_medico}`,
+          );
           const data = await res.json();
           const turnos = data.turnos || [];
 
