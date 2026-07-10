@@ -194,14 +194,16 @@ app.post("/api/profesionales/derivar", async (req, res) => {
       } = req.body;
       const { error } = await supabase.from("derivaciones").insert({
         fecha_derivacion: new Date().toISOString().split("T")[0],
-        dni,
-        nombre,
-        apellido,
-        fecha_nacimiento: fechaNacimiento,
-        telefono,
-        email,
-        observaciones,
-        profesional: medicoDerivador,
+        dni: d.dni,
+        nombre: d.nombre,
+        apellido: d.apellido,
+        fecha_nacimiento: d.fechaNacimiento,
+        telefono: d.telefono,
+        email: d.email,
+        observaciones: d.observaciones,
+        profesional: d.medicoDerivador,
+        id_profesional: d.id_profesional || null,
+        estado: "PENDIENTE",
       });
 
       if (error)
@@ -275,62 +277,78 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // PORTAL PROFESIONAL — JWT
 // =========================================================
 function verificarToken(req, res, next) {
-    const auth = req.headers.authorization;
-    console.log('Auth header:', auth ? auth.substring(0,30) : 'NULL');
-    console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'OK' : 'FALTA');
-    if (!auth) return res.status(401).json({ success: false, message: 'Sin token' });
-    try {
-        const token = auth.replace('Bearer ', '');
-        req.usuario = jwt.verify(token, JWT_SECRET);
-        next();
-    } catch(e) {
-        console.log('Error JWT:', e.message);
-        res.status(401).json({ success: false, message: 'Token inválido' });
-    }
+  const auth = req.headers.authorization;
+  console.log("Auth header:", auth ? auth.substring(0, 30) : "NULL");
+  console.log("JWT_SECRET:", process.env.JWT_SECRET ? "OK" : "FALTA");
+  if (!auth)
+    return res.status(401).json({ success: false, message: "Sin token" });
+  try {
+    const token = auth.replace("Bearer ", "");
+    req.usuario = jwt.verify(token, JWT_SECRET);
+    next();
+  } catch (e) {
+    console.log("Error JWT:", e.message);
+    res.status(401).json({ success: false, message: "Token inválido" });
+  }
 }
-app.get('/api/mi-agenda-cierre', async (req, res) => {
-    const { fecha, id_medico } = req.query;
-    try {
-        let query = supabase
-            .from('agenda_cierre_dp')
-            .select('*')
-            .order('hora', { ascending: true });
-        if (fecha) query = query.eq('fecha', fecha);
-        if (id_medico) query = query.eq('id_medico', id_medico);
-        const { data, error } = await query;
-        if (error) throw error;
-        res.json({ success: true, turnos: data || [] });
-    } catch(e) {
-        res.status(500).json({ success: false, message: e.message });
-    }
+app.get("/api/mi-agenda-cierre", async (req, res) => {
+  const { fecha, id_medico } = req.query;
+  try {
+    let query = supabase
+      .from("agenda_cierre_dp")
+      .select("*")
+      .order("hora", { ascending: true });
+    if (fecha) query = query.eq("fecha", fecha);
+    if (id_medico) query = query.eq("id_medico", id_medico);
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ success: true, turnos: data || [] });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
 });
 
-app.patch('/api/mi-agenda-cierre/:id', async (req, res) => {
-    try {
-        const { error } = await supabase
-            .from('agenda_cierre_dp')
-            .update(req.body)
-            .eq('id', req.params.id);
-        if (error) throw error;
-        res.json({ success: true });
-    } catch(e) {
-        res.status(500).json({ success: false, message: e.message });
-    }
+app.patch("/api/mi-agenda-cierre/:id", async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from("agenda_cierre_dp")
+      .update(req.body)
+      .eq("id", req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
 });
 
-app.get('/api/mi-medico', async (req, res) => {
-    const { id_profesional } = req.query;
-    try {
-        const { data } = await supabase
-            .from('medicos_cierre_dp')
-            .select('id')
-            .eq('id_profesional', id_profesional)
-            .eq('activo', true)
-            .single();
-        res.json({ id_medico: data?.id || null });
-    } catch(e) {
-        res.json({ id_medico: null });
-    }
+app.get("/api/mi-medico", async (req, res) => {
+  const { id_profesional } = req.query;
+  try {
+    const { data } = await supabase
+      .from("medicos_cierre_dp")
+      .select("id")
+      .eq("id_profesional", id_profesional)
+      .eq("activo", true)
+      .single();
+    res.json({ id_medico: data?.id || null });
+  } catch (e) {
+    res.json({ id_medico: null });
+  }
+});
+
+app.get("/api/mis-derivaciones", async (req, res) => {
+  const { id_profesional } = req.query;
+  try {
+    const { data, error } = await supabase
+      .from("derivaciones")
+      .select("*")
+      .eq("id_profesional", id_profesional)
+      .order("fecha_derivacion", { ascending: false });
+    if (error) throw error;
+    res.json({ derivaciones: data || [] });
+  } catch (e) {
+    res.status(500).json({ derivaciones: [] });
+  }
 });
 // =========================================================
 const PORT = process.env.PORT || 3000;

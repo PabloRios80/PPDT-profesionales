@@ -572,9 +572,55 @@
       }
 
       async function cargarMisDerivaciones() {
-        // Por ahora placeholder — conectar con tabla derivaciones filtrando por profesional
-        document.getElementById("listaMisDerivaciones").innerHTML =
-          '<p class="text-center text-gray-400 py-4">No hay derivaciones registradas.</p>';
+        const payload = window.dpPayload;
+        const lista = document.getElementById("listaMisDerivaciones");
+        try {
+          const res = await fetch(
+            `/api/mis-derivaciones?id_profesional=${payload.id}`,
+          );
+          const data = await res.json();
+          const derivaciones = data.derivaciones || [];
+
+          if (derivaciones.length === 0) {
+            lista.innerHTML =
+              '<p class="text-center text-gray-400 py-4">No hay derivaciones registradas.</p>';
+            return;
+          }
+
+          const COLORES = {
+            PENDIENTE: "bg-yellow-50 border-yellow-200 text-yellow-700",
+            EN_PROCESO: "bg-blue-50 border-blue-200 text-blue-700",
+            LISTO_PARA_CERRAR: "bg-green-50 border-green-400 text-green-700",
+            CERRADO: "bg-gray-50 border-gray-200 text-gray-500",
+          };
+
+          lista.innerHTML = derivaciones
+            .map(
+              (d) => `
+            <div class="border rounded-xl p-4 mb-3 ${COLORES[d.estado] || "bg-gray-50"}">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-bold text-gray-800">${d.apellido}, ${d.nombre}</p>
+                        <p class="text-xs text-gray-500">DNI: ${d.dni}</p>
+                        <p class="text-xs text-gray-400">Derivado: ${d.fecha_derivacion}</p>
+                    </div>
+                    <span class="text-xs px-3 py-1 rounded-full font-bold border ${COLORES[d.estado] || ""}">${d.estado}</span>
+                </div>
+                ${
+                  d.estado === "LISTO_PARA_CERRAR"
+                    ? `
+                <div class="mt-2 flex items-center gap-2 bg-green-100 rounded-lg px-3 py-2">
+                    <span class="text-green-700 font-bold text-sm animate-pulse">🟢 Paciente listo — coordiná el cierre</span>
+                </div>`
+                    : ""
+                }
+            </div>`,
+            )
+            .join("");
+        } catch (e) {
+          lista.innerHTML =
+            '<p class="text-red-500 text-sm text-center">Error al cargar.</p>';
+        }
       }
     </script>
   </body>

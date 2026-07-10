@@ -217,6 +217,7 @@
 
           // Añadimos el nombre del médico a los datos que vamos a enviar
           data.medicoDerivador = professionalName;
+          data.id_profesional = payload.id;
 
           const submitButton = e.target.querySelector("button");
           const messageDiv = document.getElementById("response-message");
