@@ -305,12 +305,28 @@
         document.getElementById("fechaAgenda").value = new Date()
           .toISOString()
           .split("T")[0];
+        const puedeInterno = payload.puede_cerrar_interno === true;
+        const puedeExterno = payload.puede_derivar === true;
 
-        // Accesos rápidos según rol
-        renderAccesosRapidos(payload.profesion || payload.rol);
+        renderAccesosRapidos(
+          payload.profesion || payload.rol,
+          puedeInterno,
+          puedeExterno,
+        );
 
-        cargarAgenda();
-        iniciarPolling();
+        if (puedeInterno) {
+          cargarAgenda();
+          iniciarPolling();
+        } else {
+          // Ocultar sección de agenda
+          document.querySelector(
+            ".bg-white.rounded-xl.shadow.p-5.border.border-blue-100",
+          ).style.display = "none";
+        }
+
+        if (puedeExterno) {
+          renderSeccionDerivacion();
+        }
       });
 
       function cerrarSesion() {
@@ -333,28 +349,33 @@
           "px-5 py-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap";
       }
 
-      // ── ACCESOS RÁPIDOS ──
-      function renderAccesosRapidos(rol) {
-        const ACCESOS = {
-          medico: [
-            {
-              label: "Consultas Médicas",
-              icon: "fa-user-md",
-              color: "bg-blue-600",
-              url: "https://cierre.diapreventivoiapos.com/index-medico.html",
-            },
-            {
-              label: "Consulta Afiliado",
-              icon: "fa-magnifying-glass",
-              color: "bg-purple-600",
-              url: "https://acceso.diapreventivoiapos.com/consulta-afiliado.html",
-            },
-          ],
-        };
+      function renderAccesosRapidos(rol, puedeInterno, puedeExterno) {
+        const accesos = [];
 
-        const accesos = ACCESOS[rol] || ACCESOS.medico;
+        if (puedeInterno) {
+          accesos.push({
+            label: "Consultas Médicas",
+            icon: "fa-user-md",
+            color: "bg-blue-600",
+            url: "https://cierre.diapreventivoiapos.com/index-medico.html",
+          });
+        }
+        if (puedeExterno) {
+          accesos.push({
+            label: "Derivar Paciente",
+            icon: "fa-paper-plane",
+            color: "bg-green-600",
+            url: "https://derivaciones.diapreventivoiapos.com/derivacion.html",
+          });
+        }
+        accesos.push({
+          label: "Consulta Afiliado",
+          icon: "fa-magnifying-glass",
+          color: "bg-purple-600",
+          url: "https://acceso.diapreventivoiapos.com/consulta-afiliado.html",
+        });
+
         const token = localStorage.getItem("dpToken");
-
         document.getElementById("accesoRapido").innerHTML = accesos
           .map(
             (a) => `
@@ -533,6 +554,27 @@
           cargarAgenda();
           indicator.textContent = `↻ ${new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
         }, 30000);
+      }
+      function renderSeccionDerivacion() {
+        const main = document.getElementById("seccion-consultorio");
+        const div = document.createElement("div");
+        div.className =
+          "bg-white rounded-xl shadow p-5 border border-green-100 mt-4";
+        div.innerHTML = `
+        <h2 class="font-bold text-green-800 flex items-center gap-2 mb-4">
+            <i class="fas fa-paper-plane text-green-500"></i> Mis Derivaciones
+        </h2>
+        <div id="listaMisDerivaciones">
+            <p class="text-center text-gray-400 py-8">Cargando derivaciones...</p>
+        </div>`;
+        main.appendChild(div);
+        cargarMisDerivaciones();
+      }
+
+      async function cargarMisDerivaciones() {
+        // Por ahora placeholder — conectar con tabla derivaciones filtrando por profesional
+        document.getElementById("listaMisDerivaciones").innerHTML =
+          '<p class="text-center text-gray-400 py-4">No hay derivaciones registradas.</p>';
       }
     </script>
   </body>
