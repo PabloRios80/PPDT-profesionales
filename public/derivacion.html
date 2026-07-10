@@ -1,124 +1,254 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Formulario de Derivación - IAPOS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        body { font-family: 'Roboto', sans-serif; background-color: #f0f8ff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
-        .form-container { background-color: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 100%; max-width: 600px; }
-        .logo-background { background-color: #005A9C; padding: 20px; border-radius: 10px; margin-bottom: 20px; display: inline-block; }
-        .logo-background img { max-width: 150px; display: block; }
-        h1 { color: #005A9C; margin-bottom: 20px; }
-        form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; }
-        .form-group { display: flex; flex-direction: column; }
-        label { margin-bottom: 5px; font-weight: bold; color: #333; }
-        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
-        .full-width { grid-column: 1 / -1; }
-        button { background-color: #009A44; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em; font-weight: bold; }
-        .message { margin-top: 20px; padding: 15px; border-radius: 5px; font-weight: bold; }
-        .success { background-color: #d4edda; color: #155724; }
-        .error { background-color: #f8d7da; color: #721c24; }
-        .back-link { display: inline-block; margin-top: 20px; color: #005A9C; font-weight: bold; text-decoration: none; }
+      body {
+        font-family: "Roboto", sans-serif;
+        background-color: #f0f8ff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .form-container {
+        background-color: white;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 100%;
+        max-width: 600px;
+      }
+      .logo-background {
+        background-color: #005a9c;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: inline-block;
+      }
+      .logo-background img {
+        max-width: 150px;
+        display: block;
+      }
+      h1 {
+        color: #005a9c;
+        margin-bottom: 20px;
+      }
+      form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        text-align: left;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+      label {
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 1em;
+      }
+      .full-width {
+        grid-column: 1 / -1;
+      }
+      button {
+        background-color: #009a44;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1.1em;
+        font-weight: bold;
+      }
+      .message {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 5px;
+        font-weight: bold;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .back-link {
+        display: inline-block;
+        margin-top: 20px;
+        color: #005a9c;
+        font-weight: bold;
+        text-decoration: none;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="form-container">
-        <div class="logo-background">
-            <img src="logo_iapos.png" alt="Logo IAPOS">
+      <div class="logo-background">
+        <img src="logo_iapos.png" alt="Logo IAPOS" />
+      </div>
+      <h1>Derivación a Día Preventivo</h1>
+      <form id="derivacion-form">
+        <div class="form-group">
+          <label for="dni">DNI del Paciente</label>
+          <input
+            id="dni"
+            type="text"
+            name="dni"
+            required
+            pattern="\d{7,8}"
+            title="El DNI debe tener 7 u 8 números, sin puntos."
+          />
         </div>
-        <h1>Derivación a Día Preventivo</h1>
-        <form id="derivacion-form">
-            <div class="form-group">
-                <label for="dni">DNI del Paciente</label>
-                <input id="dni" type="text" name="dni" required pattern="\d{7,8}" title="El DNI debe tener 7 u 8 números, sin puntos.">
-            </div>
-            <div class="form-group">
-                <label for="fechaNacimiento">Fecha de Nacimiento</label>
-                <input id="fechaNacimiento" type="date" name="fechaNacimiento" required>
-            </div>
-            <div class="form-group">
-                <label for="nombre">Nombre</label>
-                <input id="nombre" type="text" name="nombre" required pattern="[A-Za-zÀ-ÿ\s]+" title="Solo se permiten letras y espacios.">
-            </div>
-            <div class="form-group">
-                <label for="apellido">Apellido</label>
-                <input id="apellido" type="text" name="apellido" required pattern="[A-Za-zÀ-ÿ\s]+" title="Solo se permiten letras y espacios.">
-            </div>
-            <div class="form-group">
-                <label for="telefono">Teléfono</label>
-                <input id="telefono" type="tel" name="telefono" required pattern="[0-9]{10}" title="El teléfono debe tener 10 números, sin 0, sin 15 ni espacios.">
-            </div>
-            <div class="form-group"><label for="email">Email</label><input id="email" type="email" name="email" required></div>
-            <div class="form-group full-width"><label for="observaciones">Observaciones (opcional)</label><textarea id="observaciones" name="observaciones" rows="3"></textarea></div>
-            <div class="full-width" style="text-align: center;"><button type="submit">Enviar Derivación</button></div>
-        </form>
-        <div id="response-message" class="message" style="display:none;"></div>
-        <a href="panel-profesional.html" class="back-link">← Volver al Panel</a>
+        <div class="form-group">
+          <label for="fechaNacimiento">Fecha de Nacimiento</label>
+          <input
+            id="fechaNacimiento"
+            type="date"
+            name="fechaNacimiento"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="nombre">Nombre</label>
+          <input
+            id="nombre"
+            type="text"
+            name="nombre"
+            required
+            pattern="[A-Za-zÀ-ÿ\s]+"
+            title="Solo se permiten letras y espacios."
+          />
+        </div>
+        <div class="form-group">
+          <label for="apellido">Apellido</label>
+          <input
+            id="apellido"
+            type="text"
+            name="apellido"
+            required
+            pattern="[A-Za-zÀ-ÿ\s]+"
+            title="Solo se permiten letras y espacios."
+          />
+        </div>
+        <div class="form-group">
+          <label for="telefono">Teléfono</label>
+          <input
+            id="telefono"
+            type="tel"
+            name="telefono"
+            required
+            pattern="[0-9]{10}"
+            title="El teléfono debe tener 10 números, sin 0, sin 15 ni espacios."
+          />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label
+          ><input id="email" type="email" name="email" required />
+        </div>
+        <div class="form-group full-width">
+          <label for="observaciones">Observaciones (opcional)</label
+          ><textarea
+            id="observaciones"
+            name="observaciones"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="full-width" style="text-align: center">
+          <button type="submit">Enviar Derivación</button>
+        </div>
+      </form>
+      <div id="response-message" class="message" style="display: none"></div>
+      <a href="panel-profesional.html" class="back-link">← Volver al Panel</a>
     </div>
 
     <script>
-    // Todo el código se ejecuta después de que la página se haya cargado
-    document.addEventListener('DOMContentLoaded', () => {
-
-        // 1. Verificamos que el profesional esté logueado
-        const professionalName = sessionStorage.getItem('profesional-logueado');
-        if (!professionalName) {
-            // Si no está logueado, lo redirigimos para evitar errores
-            window.location.href = 'portal-profesionales.html';
+      // Todo el código se ejecuta después de que la página se haya cargado
+      document.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const tokenUrl = params.get("token");
+        if (tokenUrl) localStorage.setItem("dpToken", tokenUrl);
+        const token = localStorage.getItem("dpToken");
+        if (!token) {
+          window.location.href =
+            "https://acceso.diapreventivoiapos.com/login.html";
         }
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const professionalName = `${payload.nombre} ${payload.apellido}`.trim();
 
         // 2. Configuramos la validación de la fecha de nacimiento
-        const fechaNacimientoInput = document.getElementById('fechaNacimiento');
+        const fechaNacimientoInput = document.getElementById("fechaNacimiento");
         const hoy = new Date();
         // Formato YYYY-MM-DD para los atributos min y max
-        const fechaMaxima = hoy.toISOString().split("T")[0]; 
-        fechaNacimientoInput.setAttribute('max', fechaMaxima);
-        
+        const fechaMaxima = hoy.toISOString().split("T")[0];
+        fechaNacimientoInput.setAttribute("max", fechaMaxima);
+
         const anioMinimo = hoy.getFullYear() - 120;
-        const fechaMinima = new Date(hoy.setFullYear(anioMinimo)).toISOString().split("T")[0];
-        fechaNacimientoInput.setAttribute('min', fechaMinima);
+        const fechaMinima = new Date(hoy.setFullYear(anioMinimo))
+          .toISOString()
+          .split("T")[0];
+        fechaNacimientoInput.setAttribute("min", fechaMinima);
 
         // 3. Configuramos el envío del formulario
-        const form = document.getElementById('derivacion-form');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = Object.fromEntries(new FormData(e.target).entries());
-            
-            // Añadimos el nombre del médico a los datos que vamos a enviar
-            data.medicoDerivador = professionalName;
-            
-            const submitButton = e.target.querySelector('button');
-            const messageDiv = document.getElementById('response-message');
-            messageDiv.style.display = 'none';
-            submitButton.disabled = true;
-            submitButton.textContent = 'Enviando...';
+        const form = document.getElementById("derivacion-form");
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const data = Object.fromEntries(new FormData(e.target).entries());
 
-            try {
-                const response = await fetch('/api/profesionales/derivar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                if (result.status === 'success') {
-                    messageDiv.className = 'message success';
-                    messageDiv.innerHTML = '<h3>¡Derivación enviada con éxito!</h3><p>El paciente ha sido registrado en nuestra base.</p>';
-                    e.target.reset(); // Limpia el formulario
-                } else {
-                    throw new Error(result.message);
-                }
-            } catch (error) {
-                messageDiv.className = 'message error';
-                messageDiv.textContent = 'Error: ' + error.message;
-            } finally {
-                messageDiv.style.display = 'block';
-                submitButton.disabled = false;
-                submitButton.textContent = 'Enviar Derivación';
+          // Añadimos el nombre del médico a los datos que vamos a enviar
+          data.medicoDerivador = professionalName;
+
+          const submitButton = e.target.querySelector("button");
+          const messageDiv = document.getElementById("response-message");
+          messageDiv.style.display = "none";
+          submitButton.disabled = true;
+          submitButton.textContent = "Enviando...";
+
+          try {
+            const response = await fetch("/api/profesionales/derivar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            const result = await response.json();
+            if (result.status === "success") {
+              messageDiv.className = "message success";
+              messageDiv.innerHTML =
+                "<h3>¡Derivación enviada con éxito!</h3><p>El paciente ha sido registrado en nuestra base.</p>";
+              e.target.reset(); // Limpia el formulario
+            } else {
+              throw new Error(result.message);
             }
+          } catch (error) {
+            messageDiv.className = "message error";
+            messageDiv.textContent = "Error: " + error.message;
+          } finally {
+            messageDiv.style.display = "block";
+            submitButton.disabled = false;
+            submitButton.textContent = "Enviar Derivación";
+          }
         });
-        
-    });
+      });
     </script>
-</body>
+  </body>
 </html>
