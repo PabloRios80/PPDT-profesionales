@@ -170,10 +170,6 @@ app.post("/api/profesionales/login", async (req, res) => {
     res.status(500).json({ status: "error", message: "Error en el servidor." });
   }
 });
-
-// =========================================================
-// DERIVACIONES — escribe en Supabase Y Google Sheets
-// =========================================================
 app.post("/api/profesionales/derivar", async (req, res) => {
   console.log("BODY derivar:", JSON.stringify(req.body));
   try {
@@ -181,6 +177,7 @@ app.post("/api/profesionales/derivar", async (req, res) => {
       action: "createReferral",
       referralData: req.body,
     });
+    console.log("Apps Script response:", JSON.stringify(response.data));
 
     if (response.data.status === "success") {
       const {
@@ -192,21 +189,21 @@ app.post("/api/profesionales/derivar", async (req, res) => {
         email,
         observaciones,
         medicoDerivador,
+        id_profesional,
       } = req.body;
       const { error } = await supabase.from("derivaciones").insert({
         fecha_derivacion: new Date().toISOString().split("T")[0],
-        dni: d.dni,
-        nombre: d.nombre,
-        apellido: d.apellido,
-        fecha_nacimiento: d.fechaNacimiento,
-        telefono: d.telefono,
-        email: d.email,
-        observaciones: d.observaciones,
-        profesional: d.medicoDerivador,
-        id_profesional: d.id_profesional || null,
+        dni,
+        nombre,
+        apellido,
+        fecha_nacimiento: fechaNacimiento,
+        telefono,
+        email,
+        observaciones,
+        profesional: medicoDerivador,
+        id_profesional: id_profesional || null,
         estado: "PENDIENTE",
       });
-
       if (error)
         console.error("ERROR SUPABASE derivaciones:", JSON.stringify(error));
       else console.log("✅ Derivación guardada en Supabase:", dni);
@@ -214,12 +211,12 @@ app.post("/api/profesionales/derivar", async (req, res) => {
 
     res.json(response.data);
   } catch (error) {
+    console.error("ERROR DERIVAR:", error.message);
     res
       .status(500)
       .json({ status: "error", message: "No se pudo guardar la derivación." });
   }
 });
-
 // =========================================================
 // PREVENTIVISTAS
 // =========================================================
