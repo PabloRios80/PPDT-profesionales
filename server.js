@@ -175,6 +175,7 @@ app.post("/api/profesionales/login", async (req, res) => {
 // DERIVACIONES — escribe en Supabase Y Google Sheets
 // =========================================================
 app.post("/api/profesionales/derivar", async (req, res) => {
+  console.log("BODY derivar:", JSON.stringify(req.body));
   try {
     const response = await axios.post(APPS_SCRIPT_URL, {
       action: "createReferral",
