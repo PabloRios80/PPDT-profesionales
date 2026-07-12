@@ -560,6 +560,11 @@
           cargarAgenda();
           indicator.textContent = `↻ ${new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
         }, 30000);
+
+        // Polling derivaciones cada 60 segundos
+        setInterval(() => {
+          cargarMisDerivaciones();
+        }, 60000);
       }
       function renderSeccionDerivacion() {
         const main = document.getElementById("seccion-consultorio");
@@ -576,7 +581,6 @@
         main.appendChild(div);
         cargarMisDerivaciones();
       }
-
       async function cargarMisDerivaciones() {
         const payload = window.dpPayload;
         const lista = document.getElementById("listaMisDerivaciones");
@@ -593,30 +597,46 @@
             return;
           }
 
+          // Notificar si hay nuevos LISTO_PARA_CERRAR
+          const listos = derivaciones.filter(
+            (d) => d.estado === "LISTO_PARA_CERRAR",
+          );
+          if (listos.length > 0) {
+            try {
+              document.getElementById("audioNotif").play();
+            } catch (e) {}
+          }
+
           const COLORES = {
-            PENDIENTE: "bg-yellow-50 border-yellow-200 text-yellow-700",
-            EN_PROCESO: "bg-blue-50 border-blue-200 text-blue-700",
-            LISTO_PARA_CERRAR: "bg-green-50 border-green-400 text-green-700",
-            CERRADO: "bg-gray-50 border-gray-200 text-gray-500",
+            PENDIENTE: "border-yellow-200 bg-yellow-50",
+            EN_PROCESO: "border-blue-200 bg-blue-50",
+            LISTO_PARA_CERRAR: "border-green-400 bg-green-50",
+            CERRADO: "border-gray-200 bg-gray-50 opacity-60",
           };
 
           lista.innerHTML = derivaciones
             .map(
               (d) => `
-            <div class="border rounded-xl p-4 mb-3 ${COLORES[d.estado] || "bg-gray-50"}">
+            <div class="border-2 rounded-xl p-4 mb-3 ${COLORES[d.estado] || ""}">
                 <div class="flex justify-between items-start">
                     <div>
                         <p class="font-bold text-gray-800">${d.apellido}, ${d.nombre}</p>
                         <p class="text-xs text-gray-500">DNI: ${d.dni}</p>
                         <p class="text-xs text-gray-400">Derivado: ${d.fecha_derivacion}</p>
                     </div>
-                    <span class="text-xs px-3 py-1 rounded-full font-bold border ${COLORES[d.estado] || ""}">${d.estado}</span>
+                    <span class="text-xs px-3 py-1 rounded-full font-bold border ${
+                      d.estado === "LISTO_PARA_CERRAR"
+                        ? "bg-green-100 text-green-700 border-green-400"
+                        : d.estado === "PENDIENTE"
+                          ? "bg-yellow-100 text-yellow-700 border-yellow-300"
+                          : "bg-gray-100 text-gray-600 border-gray-300"
+                    }">${d.estado.replace(/_/g, " ")}</span>
                 </div>
                 ${
                   d.estado === "LISTO_PARA_CERRAR"
                     ? `
                 <div class="mt-2 flex items-center gap-2 bg-green-100 rounded-lg px-3 py-2">
-                    <span class="text-green-700 font-bold text-sm animate-pulse">🟢 Paciente listo — coordiná el cierre</span>
+                    <span class="text-green-700 font-bold text-sm animate-pulse">🟢 Paciente listo — coordiná el cierre en tu consultorio</span>
                 </div>`
                     : ""
                 }
@@ -625,7 +645,7 @@
             .join("");
         } catch (e) {
           lista.innerHTML =
-            '<p class="text-red-500 text-sm text-center">Error al cargar.</p>';
+            '<p class="text-red-500 text-sm text-center">Error al cargar derivaciones.</p>';
         }
       }
     </script>
