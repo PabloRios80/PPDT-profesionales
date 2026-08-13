@@ -472,11 +472,71 @@ app.post("/api/telereceta/crear", async (req, res) => {
 
 app.patch("/api/telereceta/:id/completar", async (req, res) => {
   try {
+    const { data: aviso, error: errorAviso } = await supabase
+      .from("avisos_telereceta")
+      .select("*")
+      .eq("id", req.params.id)
+      .single();
+    if (errorAviso || !aviso) throw errorAviso || new Error("Aviso no encontrado.");
+
     const { error } = await supabase
       .from("avisos_telereceta")
       .update({ estado: "REALIZADA", fecha_realizada: new Date().toISOString() })
       .eq("id", req.params.id);
     if (error) throw error;
+
+    // Disparar facturación (339150R) al prestador de Coordinación DP de la
+    // sede del médico — mismo patrón que Módulo DP/Extramódulo/Seguimiento.
+    try {
+      const { data: medico } = await supabase
+        .from("medicos_cierre_dp")
+        .select("id_sede_dp")
+        .eq("id", aviso.id_medico)
+        .maybeSingle();
+
+      const idSedeDp = medico?.id_sede_dp ? parseInt(medico.id_sede_dp) : null;
+
+      if (idSedeDp) {
+        const { data: prestadoresCoordSede } = await supabase
+          .from("prestador_sedes")
+          .select("id_prestador")
+          .eq("id_sede_dp", idSedeDp);
+
+        let prestadorCoord = null;
+        if (prestadoresCoordSede && prestadoresCoordSede.length > 0) {
+          const idsPrestadores = prestadoresCoordSede.map((r) => r.id_prestador);
+          const { data: institucionCoord } = await supabase
+            .from("prestadores_institucionales")
+            .select("id, nombre_institucion")
+            .in("id", idsPrestadores)
+            .eq("especialidad", "coordinacion_dp")
+            .maybeSingle();
+          if (institucionCoord) prestadorCoord = institucionCoord;
+        }
+
+        if (prestadorCoord) {
+          const hoy = new Date().toISOString().split("T")[0];
+          await supabase.from("practicas_autorizadas").insert({
+            dni: aviso.dni,
+            nombre_completo: aviso.apellido_y_nombre || "",
+            descripcion_practica: "Telereceta",
+            estado: "REALIZADA",
+            fecha_autorizacion: hoy,
+            fecha_carga: hoy,
+            id_prestador: prestadorCoord.id,
+            nombre_prestador: prestadorCoord.nombre_institucion,
+          });
+          console.log("✅ Telereceta (339150R) registrada para DNI:", aviso.dni);
+        } else {
+          console.warn(`No hay prestador de Coordinación DP configurado para sede ${idSedeDp}`);
+        }
+      } else {
+        console.warn("No se encontró id_sede_dp del médico para facturar la telereceta.");
+      }
+    } catch (facturacionErr) {
+      console.error("Error al registrar facturación de Telereceta:", facturacionErr.message);
+    }
+
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
