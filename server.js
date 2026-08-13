@@ -5,6 +5,25 @@ require("dotenv").config();
 
 const app = express();
 app.use(express.json());
+
+// ── CORS: permite cualquier subdominio de diapreventivoiapos.com ──
+const ORIGENES_PERMITIDOS_REGEX = [
+  /^https:\/\/([a-z0-9-]+\.)?diapreventivoiapos\.com$/,
+];
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ORIGENES_PERMITIDOS_REGEX.some((re) => re.test(origin))) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PATCH, DELETE, OPTIONS",
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") return res.sendStatus(200);
+  next();
+});
+
 app.use(express.static("public"));
 
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL;
