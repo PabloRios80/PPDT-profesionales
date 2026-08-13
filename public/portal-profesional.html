@@ -208,6 +208,9 @@
             </div>
           </div>
 
+          <!-- Telerecetas pendientes -->
+          <div id="listaTelerecetas" class="mb-4"></div>
+
           <!-- Lista turnos -->
           <div id="listaTurnosConsultorio">
             <p class="text-center text-gray-400 py-8">Cargando agenda...</p>
@@ -397,6 +400,61 @@
       // ── AGENDA ──
       let turnosAnteriores = [];
       let pollingInterval = null;
+      async function cargarTelerecetas(idMedico) {
+        const cont = document.getElementById("listaTelerecetas");
+        try {
+          const res = await fetch(`/api/mis-telerecetas?id_medico=${idMedico}`);
+          const data = await res.json();
+          const avisos = data.avisos || [];
+
+          if (avisos.length === 0) {
+            cont.innerHTML = "";
+            return;
+          }
+
+          cont.innerHTML = `
+            <div class="bg-purple-50 border-2 border-purple-300 rounded-xl p-3">
+              <p class="font-bold text-purple-800 text-sm mb-2">
+                <i class="fas fa-prescription mr-1"></i>Telerecetas pendientes (${avisos.length})
+              </p>
+              ${avisos
+                .map(
+                  (a) => `
+                <div class="bg-white rounded-lg p-3 mb-2 border border-purple-200">
+                  <p class="font-bold text-gray-800">${a.apellido_y_nombre || a.dni}</p>
+                  <p class="text-xs text-gray-500">DNI: ${a.dni}</p>
+                  ${
+                    a.telefono || a.email
+                      ? `<div class="mt-1 bg-gray-50 rounded p-2 text-xs">
+                          ${a.telefono ? `<p><i class="fas fa-phone mr-1"></i>${a.telefono}</p>` : ""}
+                          ${a.email ? `<p><i class="fas fa-envelope mr-1"></i>${a.email}</p>` : ""}
+                        </div>`
+                      : ""
+                  }
+                  ${a.observaciones ? `<p class="text-xs text-gray-600 mt-1 italic">"${a.observaciones}"</p>` : ""}
+                  <button onclick="marcarTelerecetaRealizada(${a.id}, ${idMedico})"
+                    class="mt-2 text-xs bg-purple-600 text-white px-3 py-1 rounded-lg font-bold hover:bg-purple-700">
+                    ✓ Marcar completada
+                  </button>
+                </div>
+              `,
+                )
+                .join("")}
+            </div>`;
+        } catch (e) {
+          cont.innerHTML = "";
+        }
+      }
+
+      async function marcarTelerecetaRealizada(id, idMedico) {
+        try {
+          await fetch(`/api/telereceta/${id}/completar`, { method: "PATCH" });
+          cargarTelerecetas(idMedico);
+        } catch (e) {
+          alert("Error al marcar como completada.");
+        }
+      }
+
       async function cargarAgenda() {
         const fecha = document.getElementById("fechaAgenda").value;
         const lista = document.getElementById("listaTurnosConsultorio");
@@ -423,6 +481,8 @@
           );
           const data = await res.json();
           const turnos = data.turnos || [];
+
+          cargarTelerecetas(dataMedico.id_medico);
 
           // Detectar nuevos PRESENTE para notificar
           const nuevosPresentes = turnos.filter(
@@ -470,6 +530,19 @@
                         <p class="text-xs text-gray-500">DNI: ${t.dni}</p>
                         <p class="text-xs text-gray-500">🕐 ${t.hora?.substring(0, 5) || "S/H"}</p>
                         ${t.tipo_turno ? `<p class="text-xs font-bold text-indigo-600 mt-1">${t.tipo_turno}${t.modalidad ? " — " + t.modalidad : ""}</p>` : ""}
+                        ${
+                          t.telefono || t.email
+                            ? `<div class="mt-2 bg-gray-100 rounded-lg p-2 text-xs">
+                                ${t.telefono ? `<p><i class="fas fa-phone mr-1"></i>${t.telefono}</p>` : ""}
+                                ${t.email ? `<p><i class="fas fa-envelope mr-1"></i>${t.email}</p>` : ""}
+                              </div>`
+                            : ""
+                        }
+                        ${
+                          t.observaciones
+                            ? `<p class="text-xs text-gray-500 mt-1 italic">"${t.observaciones}"</p>`
+                            : ""
+                        }
                     </div>
                     <div class="text-right">
                         <span class="text-xs px-3 py-1 rounded-full font-bold ${
