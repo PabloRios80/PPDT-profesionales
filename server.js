@@ -300,7 +300,41 @@ app.get("/api/mi-agenda-cierre", async (req, res) => {
     if (id_medico) query = query.eq("id_medico", id_medico);
     const { data, error } = await query;
     if (error) throw error;
-    res.json({ success: true, turnos: data || [] });
+
+    const turnos = data || [];
+    const dnis = [...new Set(turnos.map((t) => t.dni).filter(Boolean))];
+
+    // Agregar teléfono/email de cada afiliado — prioridad al contacto
+    // editable (contactos_afiliados), con respaldo en la hoja de vida.
+    let contactos = {};
+    if (dnis.length > 0) {
+      const { data: contactosGuardados } = await supabase
+        .from("contactos_afiliados")
+        .select("dni, telefono, email")
+        .in("dni", dnis);
+      (contactosGuardados || []).forEach((c) => {
+        contactos[c.dni] = c;
+      });
+
+      const dnisSinContacto = dnis.filter((d) => !contactos[d]);
+      if (dnisSinContacto.length > 0) {
+        const { data: afiliadosRespaldo } = await supabase
+          .from("afiliados")
+          .select("dni, telefono, email")
+          .in("dni", dnisSinContacto);
+        (afiliadosRespaldo || []).forEach((a) => {
+          if (!contactos[a.dni]) contactos[a.dni] = a;
+        });
+      }
+    }
+
+    const turnosConContacto = turnos.map((t) => ({
+      ...t,
+      telefono: contactos[t.dni]?.telefono || null,
+      email: contactos[t.dni]?.email || null,
+    }));
+
+    res.json({ success: true, turnos: turnosConContacto });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
@@ -348,6 +382,88 @@ app.get("/api/mis-derivaciones", async (req, res) => {
     res.status(500).json({ derivaciones: [] });
   }
 });
+
+// ── TELERECETA (aviso, no ocupa turno) ──
+app.get("/api/mis-telerecetas", async (req, res) => {
+  const { id_medico } = req.query;
+  if (!id_medico) {
+    return res.status(400).json({ success: false, message: "Falta id_medico." });
+  }
+  try {
+    const { data: avisos, error } = await supabase
+      .from("avisos_telereceta")
+      .select("*")
+      .eq("id_medico", id_medico)
+      .eq("estado", "PENDIENTE")
+      .order("fecha_creado", { ascending: true });
+    if (error) throw error;
+
+    const dnis = [...new Set((avisos || []).map((a) => a.dni))];
+    let contactos = {};
+    if (dnis.length > 0) {
+      const { data: contactosGuardados } = await supabase
+        .from("contactos_afiliados")
+        .select("dni, telefono, email")
+        .in("dni", dnis);
+      (contactosGuardados || []).forEach((c) => (contactos[c.dni] = c));
+
+      const sinContacto = dnis.filter((d) => !contactos[d]);
+      if (sinContacto.length > 0) {
+        const { data: afiliadosRespaldo } = await supabase
+          .from("afiliados")
+          .select("dni, telefono, email")
+          .in("dni", sinContacto);
+        (afiliadosRespaldo || []).forEach((a) => {
+          if (!contactos[a.dni]) contactos[a.dni] = a;
+        });
+      }
+    }
+
+    const avisosConContacto = (avisos || []).map((a) => ({
+      ...a,
+      telefono: contactos[a.dni]?.telefono || null,
+      email: contactos[a.dni]?.email || null,
+    }));
+
+    res.json({ success: true, avisos: avisosConContacto });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+app.post("/api/telereceta/crear", async (req, res) => {
+  const { dni, apellido_y_nombre, id_medico, observaciones, creado_por } = req.body;
+  if (!dni || !id_medico) {
+    return res.status(400).json({ success: false, message: "Faltan datos obligatorios." });
+  }
+  try {
+    const { error } = await supabase.from("avisos_telereceta").insert({
+      dni,
+      apellido_y_nombre,
+      id_medico,
+      observaciones: observaciones || null,
+      creado_por,
+    });
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+app.patch("/api/telereceta/:id/completar", async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from("avisos_telereceta")
+      .update({ estado: "REALIZADA", fecha_realizada: new Date().toISOString() })
+      .eq("id", req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 // =========================================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
