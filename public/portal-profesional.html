@@ -543,6 +543,42 @@
                             ? `<p class="text-xs text-gray-500 mt-1 italic">"${t.observaciones}"</p>`
                             : ""
                         }
+                        ${
+                          t.obs_log && t.obs_log.length
+                            ? `<div class="mt-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-xs">
+                                <p class="font-bold text-gray-600 mb-1">Observaciones del equipo</p>
+                                ${t.obs_log
+                                  .map(
+                                    (e) =>
+                                      `<p><strong>${ROL_LABEL_MEDICO[e.rol] || e.rol}</strong> (${e.autor || ""}): ${(e.texto || "").replace(/</g, "&lt;")}</p>`,
+                                  )
+                                  .join("")}
+                              </div>`
+                            : ""
+                        }
+                        <div class="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-2 text-xs">
+                            <p class="font-bold text-gray-600 mb-1">Chat con PV</p>
+                            <div id="chat-medico-${t.id}" class="max-h-24 overflow-y-auto mb-1">
+                                ${
+                                  (t.chat_interno || [])
+                                    .map(
+                                      (m) =>
+                                        `<p><strong>${m.rol === "pv" ? "PV" : "Médico"} (${m.autor || ""}):</strong> ${(m.texto || "").replace(/</g, "&lt;")}</p>`,
+                                    )
+                                    .join("") ||
+                                  '<span class="text-gray-400">Sin mensajes.</span>'
+                                }
+                            </div>
+                            <div class="flex gap-1">
+                                <input id="chat-medico-input-${t.id}" type="text"
+                                    class="flex-1 border rounded px-1 text-xs"
+                                    placeholder="Mensaje para PV...">
+                                <button onclick="enviarChatMedico(${t.id})"
+                                    class="bg-blue-600 text-white text-xs px-2 rounded">
+                                    Enviar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="text-right">
                         <span class="text-xs px-3 py-1 rounded-full font-bold ${
@@ -582,6 +618,14 @@
         }
       }
 
+      const ROL_LABEL_MEDICO = {
+        enfermeria: "🔵 Enfermería",
+        odontologia: "🟠 Odontología",
+        bioquimico: "🟢 Bioquímico",
+        vacunatorio: "💉 Vacunatorio",
+        preventivista: "🟣 PV",
+      };
+
       async function marcarRealizado(id) {
         const token = localStorage.getItem("dpToken");
         try {
@@ -596,6 +640,41 @@
           cargarAgenda();
         } catch (e) {
           alert("Error al actualizar.");
+        }
+      }
+
+      async function enviarChatMedico(id) {
+        const input = document.getElementById(`chat-medico-input-${id}`);
+        const texto = input.value.trim();
+        if (!texto) return;
+        const token = localStorage.getItem("dpToken");
+        const payload = window.dpPayload;
+        const turno = turnosAnteriores.find((t) => t.id === id);
+        const logActual = Array.isArray(turno?.chat_interno)
+          ? turno.chat_interno
+          : [];
+        const nuevoLog = [
+          ...logActual,
+          {
+            rol: "medico",
+            autor: `${payload?.nombre || ""} ${payload?.apellido || ""}`.trim(),
+            texto,
+            fecha: new Date().toISOString(),
+          },
+        ];
+        try {
+          await fetch(`/api/mi-agenda-cierre/${id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ chat_interno: nuevoLog }),
+          });
+          input.value = "";
+          cargarAgenda();
+        } catch (e) {
+          alert("No se pudo enviar el mensaje.");
         }
       }
 
