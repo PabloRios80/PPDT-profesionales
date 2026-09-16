@@ -305,9 +305,8 @@
           `${payload.nombre || ""} ${payload.apellido || ""}`.trim();
 
         // Fecha de hoy
-        document.getElementById("fechaAgenda").value = new Date()
-          .toISOString()
-          .split("T")[0];
+        document.getElementById("fechaAgenda").value =
+          new Date().toLocaleDateString("en-CA");
         const puedeInterno = payload.puede_cerrar_interno === true;
         const puedeExterno = payload.puede_derivar === true;
 
