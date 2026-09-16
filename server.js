@@ -353,7 +353,26 @@ app.get("/api/mi-agenda-cierre", async (req, res) => {
       email: contactos[t.dni]?.email || null,
     }));
 
-    res.json({ success: true, turnos: turnosConContacto });
+    // Cruzar con tablero_dia por dni+fecha para traer el log de
+    // observaciones del equipo (enfermería/odontología/bioquímico/PV).
+    let obsLogPorDni = {};
+    if (dnis.length > 0 && fecha) {
+      const { data: tableroRows } = await supabase
+        .from("tablero_dia")
+        .select("dni, obs_log")
+        .eq("fecha", fecha)
+        .in("dni", dnis);
+      (tableroRows || []).forEach((r) => {
+        obsLogPorDni[r.dni] = r.obs_log || [];
+      });
+    }
+
+    const turnosConObsEquipo = turnosConContacto.map((t) => ({
+      ...t,
+      obs_log: obsLogPorDni[t.dni] || [],
+    }));
+
+    res.json({ success: true, turnos: turnosConObsEquipo });
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
