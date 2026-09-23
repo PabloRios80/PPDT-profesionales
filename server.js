@@ -498,60 +498,108 @@ app.patch("/api/telereceta/:id/completar", async (req, res) => {
       .single();
     if (errorAviso || !aviso) throw errorAviso || new Error("Aviso no encontrado.");
 
+    // Idempotente: si ya estaba REALIZADA (doble clic, reintento del
+    // navegador), no se vuelve a facturar.
+    if (aviso.estado === "REALIZADA") {
+      return res.json({ success: true, yaRealizada: true });
+    }
+
     const { error } = await supabase
       .from("avisos_telereceta")
       .update({ estado: "REALIZADA", fecha_realizada: new Date().toISOString() })
-      .eq("id", req.params.id);
+      .eq("id", req.params.id)
+      .eq("estado", "PENDIENTE"); // evita carrera entre dos clics simultáneos
     if (error) throw error;
 
-    // Disparar facturación (339150R) al prestador de Coordinación DP de la
-    // sede del médico — mismo patrón que Módulo DP/Extramódulo/Seguimiento.
+    // ── Facturación de la telereceta: DOS filas, mismo patrón que el
+    // módulo (339159 a SIOS + B040101 al médico):
+    //   1) 420101 CONSULTA MÉDICA -> va a SIOS, a nombre de la
+    //      Coordinación DP de la sede del médico (Mira y López en EP).
+    //   2) 339150R TELERECETA -> código interno de pago al médico que la
+    //      hizo; NUNCA va a SIOS. Se paga solo si la fila 1 del mismo
+    //      aviso ya tiene cargado_sios=true.
+    // Las dos llevan en observaciones la marca "aviso_telereceta:<id>",
+    // que las une entre sí y evita duplicados.
+    const marca = `aviso_telereceta:${aviso.id}`;
     try {
+      const { data: existentes } = await supabase
+        .from("practicas_autorizadas")
+        .select("id")
+        .eq("observaciones", marca)
+        .limit(1);
+      if (existentes && existentes.length > 0) {
+        return res.json({ success: true, yaFacturada: true });
+      }
+
       const { data: medico } = await supabase
         .from("medicos_cierre_dp")
-        .select("id_sede_dp")
+        .select("id_sede_dp, nombre, id_profesional")
         .eq("id", aviso.id_medico)
         .maybeSingle();
 
       const idSedeDp = medico?.id_sede_dp ? parseInt(medico.id_sede_dp) : null;
+      if (!idSedeDp) {
+        console.warn(`Telereceta ${aviso.id}: el médico ${aviso.id_medico} no tiene sede.`);
+        return res.json({ success: true, advertencia: "Médico sin sede: no se facturó." });
+      }
 
-      if (idSedeDp) {
-        const { data: prestadoresCoordSede } = await supabase
-          .from("prestador_sedes")
-          .select("id_prestador")
-          .eq("id_sede_dp", idSedeDp);
+      const { data: prestadoresCoordSede } = await supabase
+        .from("prestador_sedes")
+        .select("id_prestador")
+        .eq("id_sede_dp", idSedeDp);
 
-        let prestadorCoord = null;
-        if (prestadoresCoordSede && prestadoresCoordSede.length > 0) {
-          const idsPrestadores = prestadoresCoordSede.map((r) => r.id_prestador);
-          const { data: institucionCoord } = await supabase
-            .from("prestadores_institucionales")
-            .select("id, nombre_institucion")
-            .in("id", idsPrestadores)
-            .eq("especialidad", "coordinacion_dp")
-            .maybeSingle();
-          if (institucionCoord) prestadorCoord = institucionCoord;
-        }
+      let prestadorCoord = null;
+      if (prestadoresCoordSede && prestadoresCoordSede.length > 0) {
+        const idsPrestadores = prestadoresCoordSede.map((r) => r.id_prestador);
+        const { data: institucionCoord } = await supabase
+          .from("prestadores_institucionales")
+          .select("id, nombre_institucion")
+          .in("id", idsPrestadores)
+          .eq("especialidad", "coordinacion_dp")
+          .maybeSingle();
+        if (institucionCoord) prestadorCoord = institucionCoord;
+      }
 
-        if (prestadorCoord) {
-          const hoy = new Date().toISOString().split("T")[0];
-          await supabase.from("practicas_autorizadas").insert({
-            dni: aviso.dni,
-            nombre_completo: aviso.apellido_y_nombre || "",
+      if (!prestadorCoord) {
+        console.warn(`Telereceta ${aviso.id}: no hay Coordinación DP para sede ${idSedeDp}.`);
+        return res.json({ success: true, advertencia: "Sede sin Coordinación DP: no se facturó." });
+      }
+
+      // Fecha en hora argentina (toISOString daría el día siguiente
+      // después de las 21 hs).
+      const hoy = new Date().toLocaleDateString("en-CA", {
+        timeZone: "America/Argentina/Buenos_Aires",
+      });
+      const comun = {
+        dni: aviso.dni,
+        nombre_completo: aviso.apellido_y_nombre || "",
+        estado: "REALIZADA",
+        fecha_autorizacion: hoy,
+        fecha_carga: hoy,
+        id_sede_dp: idSedeDp,
+        observaciones: marca,
+      };
+
+      const { error: errorInsert } = await supabase
+        .from("practicas_autorizadas")
+        .insert([
+          {
+            ...comun,
             descripcion_practica: "Telereceta",
-            estado: "REALIZADA",
-            fecha_autorizacion: hoy,
-            fecha_carga: hoy,
+            codigo_prestacion: "420101",
             id_prestador: prestadorCoord.id,
             nombre_prestador: prestadorCoord.nombre_institucion,
-          });
-          console.log("✅ Telereceta (339150R) registrada para DNI:", aviso.dni);
-        } else {
-          console.warn(`No hay prestador de Coordinación DP configurado para sede ${idSedeDp}`);
-        }
-      } else {
-        console.warn("No se encontró id_sede_dp del médico para facturar la telereceta.");
-      }
+          },
+          {
+            ...comun,
+            descripcion_practica: "Honorario Telereceta",
+            codigo_prestacion: "339150R",
+            id_prestador: medico.id_profesional || String(aviso.id_medico),
+            nombre_prestador: medico.nombre || "",
+          },
+        ]);
+      if (errorInsert) throw errorInsert;
+      console.log(`✅ Telereceta ${aviso.id} facturada (420101 + 339150R) DNI ${aviso.dni}`);
     } catch (facturacionErr) {
       console.error("Error al registrar facturación de Telereceta:", facturacionErr.message);
     }
